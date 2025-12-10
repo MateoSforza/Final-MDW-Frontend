@@ -6,6 +6,8 @@ import SesionesPage from "./pages/SesionesPage";
 import { useAuth } from "./context/AuthContext";
 import type { ReactNode } from "react";
 import Layout from "./components/Layout";
+import DashboardPage from "./pages/DashboardPage";
+
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -35,6 +37,17 @@ export default function App() {
           <RequireAuth>
             <Layout>
               <ActividadesPage />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+
+            <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
+            <Layout>
+              <DashboardPage />
             </Layout>
           </RequireAuth>
         }

@@ -25,7 +25,7 @@ export default function NavBar() {
         justifyContent: "space-between",
       }}
     >
-      <div>
+            <div>
         <span style={{ fontWeight: "bold", marginRight: "16px" }}>
           FocusTracker
         </span>
@@ -49,7 +49,16 @@ export default function NavBar() {
         >
           Sesiones
         </Link>
-        {/* Más adelante podríamos agregar /dashboard */}
+        <Link
+          to="/dashboard"
+          style={{
+            marginRight: "12px",
+            textDecoration: "none",
+            color: isActive("/dashboard") ? "#38bdf8" : "#e5e7eb",
+          }}
+        >
+          Dashboard
+        </Link>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
