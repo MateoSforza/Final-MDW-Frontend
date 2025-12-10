@@ -13,7 +13,7 @@ interface Actividad {
 
 interface SesionActividad {
   _id: string;
-  actividadId: Actividad | string; // por el populate puede ser objeto
+  actividadId: Actividad | string; // puede venir populado o solo id
   fecha: string;
   duracionMinutos: number;
   nota?: string;
@@ -56,12 +56,9 @@ export default function SesionesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.actividadId || !form.fecha || !form.duracionMinutos) {
-      return;
-    }
+    if (!form.actividadId || !form.fecha || !form.duracionMinutos) return;
 
     try {
-      // convertir datetime-local a ISO
       const isoFecha = new Date(form.fecha).toISOString();
 
       await createSesion({
@@ -69,7 +66,6 @@ export default function SesionesPage() {
         fecha: isoFecha,
       });
 
-      // reset simple
       setForm({
         actividadId: "",
         fecha: "",
@@ -104,7 +100,7 @@ export default function SesionesPage() {
     <div style={{ maxWidth: 800, margin: "40px auto" }}>
       <h1>Sesiones de {user?.nombre}</h1>
 
-      {/* Formulario de alta de sesión */}
+      {/* Formulario */}
       <form onSubmit={handleCreate} style={{ marginBottom: "24px" }}>
         <div>
           <label>Actividad</label>
@@ -166,7 +162,7 @@ export default function SesionesPage() {
         <button type="submit">Registrar sesión</button>
       </form>
 
-      {/* Lista de sesiones */}
+      {/* Lista */}
       {loading ? (
         <p>Cargando sesiones...</p>
       ) : sesiones.length === 0 ? (

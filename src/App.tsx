@@ -5,6 +5,7 @@ import ActividadesPage from "./pages/ActividadesPage";
 import SesionesPage from "./pages/SesionesPage";
 import { useAuth } from "./context/AuthContext";
 import type { ReactNode } from "react";
+import Layout from "./components/Layout";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -24,21 +25,28 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" />} />
+
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+
       <Route
         path="/actividades"
         element={
           <RequireAuth>
-            <ActividadesPage />
+            <Layout>
+              <ActividadesPage />
+            </Layout>
           </RequireAuth>
         }
       />
+
       <Route
         path="/sesiones"
         element={
           <RequireAuth>
-            <SesionesPage />
+            <Layout>
+              <SesionesPage />
+            </Layout>
           </RequireAuth>
         }
       />
