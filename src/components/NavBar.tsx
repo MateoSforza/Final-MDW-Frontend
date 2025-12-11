@@ -6,77 +6,55 @@ export default function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   const isActive = (path: string) => location.pathname === path;
 
+  const linkClasses = (path: string) =>
+    `text-sm font-medium px-2 py-1 rounded-md transition-colors ${
+      isActive(path)
+        ? "text-sky-500 bg-sky-100"
+        : "text-gray-300 hover:text-white hover:bg-gray-700"
+    }`;
+
   return (
-    <header
-      style={{
-        backgroundColor: "#1f2937",
-        color: "#f9fafb",
-        padding: "10px 20px",
-        marginBottom: "20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-            <div>
-        <span style={{ fontWeight: "bold", marginRight: "16px" }}>
-          FocusTracker
-        </span>
-        <Link
-          to="/actividades"
-          style={{
-            marginRight: "12px",
-            textDecoration: "none",
-            color: isActive("/actividades") ? "#38bdf8" : "#e5e7eb",
-          }}
-        >
-          Actividades
-        </Link>
-        <Link
-          to="/sesiones"
-          style={{
-            marginRight: "12px",
-            textDecoration: "none",
-            color: isActive("/sesiones") ? "#38bdf8" : "#e5e7eb",
-          }}
-        >
-          Sesiones
-        </Link>
-        <Link
-          to="/dashboard"
-          style={{
-            marginRight: "12px",
-            textDecoration: "none",
-            color: isActive("/dashboard") ? "#38bdf8" : "#e5e7eb",
-          }}
-        >
-          Dashboard
-        </Link>
+    <header className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-md">
+      <div className="flex items-center gap-6">
+        {/* Logo + nombre */}
+        <div className="flex items-center gap-2">
+          <img
+            src="/FocusTracker.svg"
+            alt="FocusTracker logo"
+            className="h-7 w-7"
+          />
+          <span className="font-semibold text-lg tracking-tight">
+            FocusTracker
+          </span>
+        </div>
+
+        <nav className="flex items-center gap-2">
+          <Link to="/dashboard" className={linkClasses("/dashboard")}>
+            Dashboard
+          </Link>
+          <Link to="/actividades" className={linkClasses("/actividades")}>
+            Actividades
+          </Link>
+          <Link to="/sesiones" className={linkClasses("/sesiones")}>
+            Sesiones
+          </Link>
+        </nav>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div className="flex items-center gap-3">
         {user && (
-          <span style={{ fontSize: "0.9rem" }}>
+          <span className="text-sm text-gray-300">
             {user.nombre}
           </span>
         )}
         <button
-          onClick={handleLogout}
-          style={{
-            backgroundColor: "#ef4444",
-            border: "none",
-            color: "#f9fafb",
-            padding: "6px 10px",
-            borderRadius: "4px",
-            cursor: "pointer",
+          onClick={() => {
+            logout();
+            navigate("/login");
           }}
+          className="bg-red-500 hover:bg-red-600 text-sm font-medium px-3 py-1.5 rounded-md transition-colors"
         >
           Cerrar sesión
         </button>

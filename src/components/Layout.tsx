@@ -7,9 +7,11 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <NavBar />
-      <main style={{ padding: "0 20px" }}>{children}</main>
+      <main className="flex-1 px-4 py-6 md:px-8">
+        <div className="max-w-5xl mx-auto">{children}</div>
+      </main>
     </div>
   );
 }

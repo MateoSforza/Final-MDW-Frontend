@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getSesiones } from "../api/sesionesApi";
 import { getActividades } from "../api/actividadesApi";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 interface Actividad {
   _id: string;
@@ -45,22 +54,20 @@ export default function DashboardPage() {
     }
   };
 
-  // --- Cálculos de resumen ---
+  // ----- Cálculos de resumen -----
 
-  // Total de minutos registrados
   const totalMinutos = useMemo(
     () => sesiones.reduce((acc, s) => acc + s.duracionMinutos, 0),
     [sesiones]
   );
 
-  // Fecha límite últimos 7 días
   const limite7Dias = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 7);
+    d.setDate(d.getDate() - 6); // hoy y 6 días hacia atrás = 7 días
+    d.setHours(0, 0, 0, 0);
     return d;
   }, []);
 
-  // Minutos en últimos 7 días
   const minutosUltimos7Dias = useMemo(
     () =>
       sesiones
@@ -69,7 +76,6 @@ export default function DashboardPage() {
     [sesiones, limite7Dias]
   );
 
-  // Minutos por actividad
   const minutosPorActividad = useMemo(() => {
     const mapa = new Map<string, { nombre: string; minutos: number }>();
 
@@ -80,7 +86,7 @@ export default function DashboardPage() {
       if (typeof s.actividadId === "string") {
         id = s.actividadId;
         const act = actividades.find((a) => a._id === id);
-        nombre = act ? act.nombre : "Actividad sin nombre";
+        nombre = act ? act.nombre : "Actividad";
       } else {
         id = s.actividadId._id;
         nombre = s.actividadId.nombre;
@@ -97,7 +103,6 @@ export default function DashboardPage() {
     return Array.from(mapa.values()).sort((a, b) => b.minutos - a.minutos);
   }, [sesiones, actividades]);
 
-  // Sesiones recientes (5 últimas)
   const sesionesRecientes = useMemo(
     () =>
       [...sesiones]
@@ -117,97 +122,182 @@ export default function DashboardPage() {
     return actividadId.nombre;
   };
 
+  // ----- Datos para gráficos -----
+
+  // Gráfico 1: minutos por actividad (ya lo tenemos en minutosPorActividad)
+  const dataBarPorActividad = minutosPorActividad.map((item) => ({
+    nombre: item.nombre,
+    minutos: item.minutos,
+  }));
+
+  // Gráfico 2: minutos por día en los últimos 7 días
+  const dataBarPorDia = useMemo(() => {
+    const dias: { fecha: string; label: string; minutos: number }[] = [];
+
+    // Crear estructura de 7 días (de más viejo a hoy)
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i)); // 6,5,4,...,0
+      d.setHours(0, 0, 0, 0);
+
+      const label = d.toLocaleDateString("es-AR", {
+        weekday: "short",
+        day: "2-digit",
+      });
+
+      dias.push({
+        fecha: d.toISOString().substring(0, 10), // yyyy-mm-dd
+        label,
+        minutos: 0,
+      });
+    }
+
+    // Sumar minutos por día
+    sesiones.forEach((s) => {
+      const fechaSesion = new Date(s.fecha);
+      const iso = fechaSesion.toISOString().substring(0, 10);
+      const dia = dias.find((d) => d.fecha === iso);
+      if (dia) {
+        dia.minutos += s.duracionMinutos;
+      }
+    });
+
+    return dias;
+  }, [sesiones]);
+
   if (loading) {
     return (
-      <div style={{ maxWidth: 900, margin: "40px auto" }}>
-        <h1>Dashboard</h1>
-        <p>Cargando datos...</p>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Dashboard
+        </h1>
+        <p className="text-sm text-gray-500">Cargando datos...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto" }}>
-      <h1>Dashboard de {user?.nombre}</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Dashboard de {user?.nombre}
+        </h1>
+        <p className="text-sm text-gray-500">
+          Resumen del tiempo dedicado a tus actividades.
+        </p>
+      </div>
 
-      {/* Tarjetas resumen */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-          margin: "20px 0",
-        }}
-      >
-        <div
-          style={{
-            border: "1px solid #e5e7eb",
-            padding: "12px 16px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Total de minutos registrados</h3>
-          <p style={{ fontSize: "1.6rem", fontWeight: "bold" }}>
-            {totalMinutos} min
+      {/* Cards resumen */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <h3 className="text-sm font-medium text-gray-600">
+            Total de minutos
+          </h3>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">
+            {totalMinutos}
           </p>
         </div>
 
-        <div
-          style={{
-            border: "1px solid #e5e7eb",
-            padding: "12px 16px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Últimos 7 días</h3>
-          <p style={{ fontSize: "1.6rem", fontWeight: "bold" }}>
-            {minutosUltimos7Dias} min
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <h3 className="text-sm font-medium text-gray-600">
+            Últimos 7 días
+          </h3>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">
+            {minutosUltimos7Dias}
           </p>
         </div>
 
-        <div
-          style={{
-            border: "1px solid #e5e7eb",
-            padding: "12px 16px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Cantidad de sesiones</h3>
-          <p style={{ fontSize: "1.6rem", fontWeight: "bold" }}>
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <h3 className="text-sm font-medium text-gray-600">
+            Cantidad de sesiones
+          </h3>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">
             {sesiones.length}
           </p>
         </div>
       </div>
 
-      {/* Minutos por actividad */}
-      <section style={{ marginBottom: "24px" }}>
-        <h2>Minutos por actividad</h2>
-        {minutosPorActividad.length === 0 ? (
-          <p>No hay sesiones cargadas.</p>
-        ) : (
-          <ul>
-            {minutosPorActividad.map((item) => (
-              <li key={item.nombre}>
-                <strong>{item.nombre}</strong>: {item.minutos} min
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Gráficos */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Gráfico: minutos por actividad */}
+        <section className="bg-white rounded-2xl shadow-sm p-4">
+          <h2 className="text-sm font-semibold text-gray-800 mb-3">
+            Minutos por actividad
+          </h2>
+
+          {dataBarPorActividad.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              Todavía no tenés sesiones registradas.
+            </p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dataBarPorActividad}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="nombre"
+                    tick={{ fontSize: 11 }}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="minutos" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </section>
+
+        {/* Gráfico: minutos por día (últimos 7 días) */}
+        <section className="bg-white rounded-2xl shadow-sm p-4">
+          <h2 className="text-sm font-semibold text-gray-800 mb-3">
+            Minutos por día (últimos 7 días)
+          </h2>
+
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dataBarPorDia}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="minutos" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
 
       {/* Sesiones recientes */}
-      <section>
-        <h2>Sesiones recientes</h2>
+      <section className="bg-white rounded-2xl shadow-sm p-4">
+        <h2 className="text-sm font-semibold text-gray-800 mb-3">
+          Sesiones recientes
+        </h2>
         {sesionesRecientes.length === 0 ? (
-          <p>No hay sesiones recientes.</p>
+          <p className="text-sm text-gray-500">
+            No hay sesiones recientes.
+          </p>
         ) : (
-          <ul>
+          <ul className="space-y-2 text-sm">
             {sesionesRecientes.map((s) => (
-              <li key={s._id}>
-                {getActividadLabel(s.actividadId)} —{" "}
-                {new Date(s.fecha).toLocaleString()} —{" "}
-                {s.duracionMinutos} min{" "}
-                {s.nota ? `— ${s.nota}` : ""}
+              <li
+                key={s._id}
+                className="flex flex-col border-b last:border-b-0 pb-2 last:pb-0"
+              >
+                <span className="font-medium text-gray-900">
+                  {getActividadLabel(s.actividadId)} —{" "}
+                  {s.duracionMinutos} min
+                </span>
+                <span className="text-gray-500">
+                  {new Date(s.fecha).toLocaleString()}
+                  {s.nota ? ` — ${s.nota}` : ""}
+                </span>
               </li>
             ))}
           </ul>
