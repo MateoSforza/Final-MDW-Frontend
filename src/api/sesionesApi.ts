@@ -3,17 +3,17 @@ import api from "./axiosClient";
 export type Sesion = {
   _id: string;
   usuarioId: string;
-  actividadId:
-    | string
-    | {
-        _id: string;
-        nombre: string;
-        categoria?: string;
-        color?: string;
-      };
+  actividadId: string | ActividadLite;
   fecha: string;
   duracionMinutos: number;
   nota?: string;
+};
+
+export type ActividadLite = {
+  _id: string;
+  nombre: string;
+  categoria?: string;
+  color?: string;
 };
 
 export type CrearSesionPayload = {

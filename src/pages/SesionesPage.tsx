@@ -1,36 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getSesiones, createSesion, deleteSesion } from "../api/sesionesApi";
-import type { SesionPayload } from "../api/sesionesApi";
-import { getActividades } from "../api/actividadesApi";
-
-interface Actividad {
-  _id: string;
-  nombre: string;
-  categoria: string;
-  color: string;
-}
-
-interface SesionActividad {
-  _id: string;
-  actividadId: Actividad | string;
-  fecha: string;
-  duracionMinutos: number;
-  nota?: string;
-}
+import {
+  getSesionesRequest,
+  crearSesionRequest,
+  eliminarSesionRequest,
+  type CrearSesionPayload,
+  type Sesion,
+} from "../api/sesionesApi";
+import { getActividadesRequest, type Actividad } from "../api/actividadesApi";
 
 export default function SesionesPage() {
   const { user } = useAuth();
 
-  const [sesiones, setSesiones] = useState<SesionActividad[]>([]);
+  const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState<SesionPayload>({
+  const [form, setForm] = useState<CrearSesionPayload>({
     actividadId: "",
-    fecha: "",
-    duracionMinutos: 60,
+    fecha: new Date().toISOString(),
+    duracionMinutos: 30,
     nota: "",
   });
 
@@ -42,13 +32,18 @@ export default function SesionesPage() {
     setLoading(true);
     try {
       const [sesRes, actRes] = await Promise.all([
-        getSesiones(),
-        getActividades(),
+        getSesionesRequest(),
+        getActividadesRequest(),
       ]);
       setSesiones(sesRes.data);
       setActividades(actRes.data);
+
+      // Setea actividadId por defecto si está vacío
+      if (!form.actividadId && actRes.data.length > 0) {
+        setForm((prev) => ({ ...prev, actividadId: actRes.data[0]._id }));
+      }
     } catch (error) {
-      console.error("Error cargando datos:", error);
+      console.error("Error cargando sesiones:", error);
     } finally {
       setLoading(false);
     }
@@ -56,24 +51,16 @@ export default function SesionesPage() {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.actividadId || !form.fecha || !form.duracionMinutos) return;
-
     try {
-      const isoFecha = new Date(form.fecha).toISOString();
+      const res = await crearSesionRequest(form);
+      setSesiones((prev) => [res.data, ...prev]);
 
-      await createSesion({
-        ...form,
-        fecha: isoFecha,
-      });
-
-      setForm({
-        actividadId: "",
-        fecha: "",
-        duracionMinutos: 60,
+      setForm((prev) => ({
+        ...prev,
+        fecha: new Date().toISOString(),
+        duracionMinutos: 30,
         nota: "",
-      });
-
-      fetchData();
+      }));
     } catch (error) {
       console.error("Error creando sesión:", error);
     }
@@ -81,20 +68,28 @@ export default function SesionesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteSesion(id);
-      fetchData();
+      await eliminarSesionRequest(id);
+      setSesiones((prev) => prev.filter((s) => s._id !== id));
     } catch (error) {
       console.error("Error eliminando sesión:", error);
     }
   };
 
-  const getActividadLabel = (actividadId: Actividad | string) => {
+  const getActividadNombre = (actividadId: Sesion["actividadId"]) => {
     if (typeof actividadId === "string") {
       const act = actividades.find((a) => a._id === actividadId);
-      return act ? act.nombre : actividadId;
+      return act ? act.nombre : "Actividad";
     }
     return actividadId.nombre;
   };
+
+  const sesionesOrdenadas = useMemo(
+    () =>
+      [...sesiones].sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+      ),
+    [sesiones]
+  );
 
   return (
     <div className="space-y-6">
@@ -103,161 +98,119 @@ export default function SesionesPage() {
           Sesiones de {user?.nombre}
         </h1>
         <p className="text-sm text-gray-500">
-          Registrá cuánto tiempo dedicás a cada actividad.
+          Registrá sesiones asociadas a tus actividades.
         </p>
       </div>
 
-      {/* Card formulario */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">
-          Nueva sesión
-        </h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Nueva sesión</h2>
 
         <form
           onSubmit={handleCreate}
-          className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+          className="grid gap-4 md:grid-cols-[2fr,1fr,1fr,2fr,auto]"
         >
-          <div className="space-y-1 md:col-span-2 lg:col-span-1">
-            <label className="text-sm font-medium text-gray-700">
-              Actividad
-            </label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Actividad</label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               value={form.actividadId}
-              onChange={(e) =>
-                setForm({ ...form, actividadId: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, actividadId: e.target.value })}
               required
             >
-              <option value="">Seleccioná una actividad</option>
-              {actividades.map((a) => (
-                <option key={a._id} value={a._id}>
-                  {a.nombre} — {a.categoria}
-                </option>
-              ))}
+              {actividades.length === 0 ? (
+                <option value="">No hay actividades</option>
+              ) : (
+                actividades.map((a) => (
+                  <option key={a._id} value={a._id}>
+                    {a.nombre}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">
-              Fecha y hora
-            </label>
+            <label className="text-sm font-medium text-gray-700">Fecha</label>
             <input
               type="datetime-local"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              value={form.fecha}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={form.fecha.slice(0, 16)}
               onChange={(e) =>
-                setForm({ ...form, fecha: e.target.value })
+                setForm({ ...form, fecha: new Date(e.target.value).toISOString() })
               }
               required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">
-              Duración (minutos)
-            </label>
+            <label className="text-sm font-medium text-gray-700">Minutos</label>
             <input
               type="number"
               min={1}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               value={form.duracionMinutos}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  duracionMinutos: Number(e.target.value),
-                })
+                setForm({ ...form, duracionMinutos: Number(e.target.value) })
               }
               required
             />
           </div>
 
-          <div className="space-y-1 md:col-span-2 lg:col-span-1">
-            <label className="text-sm font-medium text-gray-700">
-              Nota (opcional)
-            </label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Nota</label>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              value={form.nota}
-              onChange={(e) =>
-                setForm({ ...form, nota: e.target.value })
-              }
-              placeholder="Ej: Parcial MDW, rutina fuerza..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={form.nota ?? ""}
+              onChange={(e) => setForm({ ...form, nota: e.target.value })}
+              placeholder="Opcional"
             />
           </div>
 
-          <div className="flex items-end md:col-span-2 lg:col-span-1">
+          <div className="flex items-end">
             <button
               type="submit"
               className="w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors"
             >
-              Registrar sesión
+              Crear
             </button>
           </div>
         </form>
       </div>
 
-      {/* Lista / tabla */}
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">
-          Sesiones registradas
-        </h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Sesiones registradas</h2>
 
         {loading ? (
           <p className="text-sm text-gray-500">Cargando sesiones...</p>
-        ) : sesiones.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            Todavía no registraste sesiones.
-          </p>
+        ) : sesionesOrdenadas.length === 0 ? (
+          <p className="text-sm text-gray-500">Todavía no registraste sesiones.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actividad
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duración
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nota
-                  </th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {sesiones.map((s) => (
-                  <tr key={s._id}>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {getActividadLabel(s.actividadId)}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-gray-700">
-                      {new Date(s.fecha).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-gray-700">
-                      {s.duracionMinutos} min
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-gray-700">
-                      {s.nota ?? "-"}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        onClick={() => handleDelete(s._id)}
-                        className="text-xs text-red-600 hover:text-red-700 font-medium"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="space-y-3">
+            {sesionesOrdenadas.map((s) => (
+              <li
+                key={s._id}
+                className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {getActividadNombre(s.actividadId)} — {s.duracionMinutos} min
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(s.fecha).toLocaleString()}
+                    {s.nota ? ` — ${s.nota}` : ""}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleDelete(s._id)}
+                  className="text-xs text-red-600 hover:text-red-700 font-medium"
+                >
+                  Eliminar
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
