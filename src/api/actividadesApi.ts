@@ -1,18 +1,32 @@
 import api from "./axiosClient";
 
-export interface ActividadPayload {
+export type Actividad = {
+  _id: string;
   nombre: string;
-  categoria: string;
-  color: string;
-}
+  categoria?: string;
+  color?: string;
+  activa: boolean;
+  usuarioId: string;
+  creadaEn?: string;
+};
 
-export const getActividades = () => api.get("/actividades");
+export type CrearActividadPayload = {
+  nombre: string;
+  categoria?: string;
+  color?: string;
+};
 
-export const createActividad = (data: ActividadPayload) =>
-  api.post("/actividades", data);
+export type ActualizarActividadPayload = {
+  nombre?: string;
+  categoria?: string;
+  color?: string;
+  activa?: boolean;
+};
 
-export const updateActividad = (id: string, data: ActividadPayload) =>
-  api.put(`/actividades/${id}`, data);
-
-export const deleteActividad = (id: string) =>
+export const getActividadesRequest = () => api.get<Actividad[]>("/actividades");
+export const crearActividadRequest = (data: CrearActividadPayload) =>
+  api.post<Actividad>("/actividades", data);
+export const actualizarActividadRequest = (id: string, data: ActualizarActividadPayload) =>
+  api.put<Actividad>(`/actividades/${id}`, data);
+export const eliminarActividadRequest = (id: string) =>
   api.delete(`/actividades/${id}`);

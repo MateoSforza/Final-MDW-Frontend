@@ -1,18 +1,20 @@
 import api from "./axiosClient";
 
-export interface LoginPayload {
+export type LoginPayload = {
   email: string;
   password: string;
-}
+};
 
-export interface RegisterPayload {
+export type RegisterPayload = {
   nombre: string;
   email: string;
   password: string;
-}
+};
 
-export const loginRequest = (data: LoginPayload) =>
-  api.post("/auth/login", data);
+export const registerRequest = (data: RegisterPayload) => {
+  return api.post("/auth/register", data);
+};
 
-export const registerRequest = (data: RegisterPayload) =>
-  api.post("/auth/register", data);
+export const loginRequest = (data: LoginPayload) => {
+  return api.post("/auth/login", data);
+};

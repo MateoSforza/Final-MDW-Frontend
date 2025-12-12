@@ -1,16 +1,30 @@
 import api from "./axiosClient";
 
-export interface SesionPayload {
-  actividadId: string;
-  fecha: string; // ISO string
+export type Sesion = {
+  _id: string;
+  usuarioId: string;
+  actividadId:
+    | string
+    | {
+        _id: string;
+        nombre: string;
+        categoria?: string;
+        color?: string;
+      };
+  fecha: string;
   duracionMinutos: number;
   nota?: string;
-}
+};
 
-export const getSesiones = () => api.get("/sesiones");
+export type CrearSesionPayload = {
+  actividadId: string;
+  fecha: string;
+  duracionMinutos: number;
+  nota?: string;
+};
 
-export const createSesion = (data: SesionPayload) =>
-  api.post("/sesiones", data);
-
-export const deleteSesion = (id: string) =>
+export const getSesionesRequest = () => api.get<Sesion[]>("/sesiones");
+export const crearSesionRequest = (data: CrearSesionPayload) =>
+  api.post<Sesion>("/sesiones", data);
+export const eliminarSesionRequest = (id: string) =>
   api.delete(`/sesiones/${id}`);

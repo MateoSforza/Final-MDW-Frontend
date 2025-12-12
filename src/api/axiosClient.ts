@@ -14,4 +14,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor de response (manejo de errores)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message;
+
+      if (status === 401) {
+        console.warn("Sesión inválida:", message);
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export default api;

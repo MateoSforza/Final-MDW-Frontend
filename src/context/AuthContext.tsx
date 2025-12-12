@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import { loginRequest, registerRequest } from "../api/authApi";
-import type { LoginPayload, RegisterPayload } from "../api/authApi";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { loginRequest, registerRequest, type LoginPayload, type RegisterPayload } from "../api/authApi";
+
 
 interface User {
   id: string;
