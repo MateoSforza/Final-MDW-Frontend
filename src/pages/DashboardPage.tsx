@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getSesiones } from "../api/sesionesApi";
-import { getActividades } from "../api/actividadesApi";
+import { getSesionesRequest } from "../api/sesionesApi";
+import { getActividadesRequest } from "../api/actividadesApi";
 import {
   BarChart,
   Bar,
@@ -12,26 +12,13 @@ import {
   CartesianGrid,
 } from "recharts";
 
-interface Actividad {
-  _id: string;
-  nombre: string;
-  categoria: string;
-  color: string;
-}
-
-interface SesionActividad {
-  _id: string;
-  actividadId: Actividad | string;
-  fecha: string;
-  duracionMinutos: number;
-  nota?: string;
-}
+import type { Sesion, ActividadLite } from "../api/sesionesApi";
 
 export default function DashboardPage() {
   const { user } = useAuth();
 
-  const [sesiones, setSesiones] = useState<SesionActividad[]>([]);
-  const [actividades, setActividades] = useState<Actividad[]>([]);
+  const [sesiones, setSesiones] = useState<Sesion[]>([]);
+  const [actividades, setActividades] = useState<ActividadLite[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,9 +29,10 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const [sesRes, actRes] = await Promise.all([
-        getSesiones(),
-        getActividades(),
+        getSesionesRequest(),
+        getActividadesRequest(),
       ]);
+
       setSesiones(sesRes.data);
       setActividades(actRes.data);
     } catch (error) {
@@ -54,7 +42,6 @@ export default function DashboardPage() {
     }
   };
 
-  // ----- Cálculos de resumen -----
 
   const totalMinutos = useMemo(
     () => sesiones.reduce((acc, s) => acc + s.duracionMinutos, 0),
@@ -114,7 +101,7 @@ export default function DashboardPage() {
     [sesiones]
   );
 
-  const getActividadLabel = (actividadId: Actividad | string) => {
+  const getActividadLabel = (actividadId: ActividadLite | string) => {
     if (typeof actividadId === "string") {
       const act = actividades.find((a) => a._id === actividadId);
       return act ? act.nombre : actividadId;

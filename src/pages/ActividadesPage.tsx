@@ -2,19 +2,12 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
-  getActividades,
-  createActividad,
-  deleteActividad,
+  getActividadesRequest,
+  crearActividadRequest,
+  eliminarActividadRequest,
+  type CrearActividadPayload,
+  type Actividad,
 } from "../api/actividadesApi";
-import type { ActividadPayload } from "../api/actividadesApi";
-
-interface Actividad {
-  _id: string;
-  nombre: string;
-  categoria: string;
-  color: string;
-  activa: boolean;
-}
 
 export default function ActividadesPage() {
   const { user } = useAuth();
@@ -22,7 +15,7 @@ export default function ActividadesPage() {
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState<ActividadPayload>({
+  const [form, setForm] = useState<CrearActividadPayload>({
     nombre: "",
     categoria: "",
     color: "#4f46e5",
@@ -35,7 +28,7 @@ export default function ActividadesPage() {
   const fetchActividades = async () => {
     setLoading(true);
     try {
-      const res = await getActividades();
+      const res = await getActividadesRequest();
       setActividades(res.data);
     } catch (error) {
       console.error("Error al cargar actividades:", error);
@@ -47,9 +40,11 @@ export default function ActividadesPage() {
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await createActividad(form);
+      const res = await crearActividadRequest(form);
+      // Actualizamos localmente sin recargar todo (más pro)
+      setActividades((prev) => [res.data, ...prev]);
+
       setForm({ nombre: "", categoria: "", color: "#4f46e5" });
-      fetchActividades();
     } catch (error) {
       console.error("Error creando actividad:", error);
     }
@@ -57,8 +52,9 @@ export default function ActividadesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteActividad(id);
-      fetchActividades();
+      await eliminarActividadRequest(id);
+      // Sacamos la actividad del estado (más pro)
+      setActividades((prev) => prev.filter((a) => a._id !== id));
     } catch (error) {
       console.error("Error eliminando actividad:", error);
     }
@@ -86,16 +82,12 @@ export default function ActividadesPage() {
           className="grid gap-4 md:grid-cols-[2fr,2fr,1fr,auto]"
         >
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">
-              Nombre
-            </label>
+            <label className="text-sm font-medium text-gray-700">Nombre</label>
             <input
               type="text"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
               value={form.nombre}
-              onChange={(e) =>
-                setForm({ ...form, nombre: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
               required
               placeholder="Estudiar MDW, Gimnasio..."
             />
@@ -108,26 +100,20 @@ export default function ActividadesPage() {
             <input
               type="text"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-              value={form.categoria}
-              onChange={(e) =>
-                setForm({ ...form, categoria: e.target.value })
-              }
+              value={form.categoria ?? ""}
+              onChange={(e) => setForm({ ...form, categoria: e.target.value })}
               required
               placeholder="Estudio, deporte, trabajo..."
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">
-              Color
-            </label>
+            <label className="text-sm font-medium text-gray-700">Color</label>
             <input
               type="color"
               className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-              value={form.color}
-              onChange={(e) =>
-                setForm({ ...form, color: e.target.value })
-              }
+              value={form.color ?? "#4f46e5"}
+              onChange={(e) => setForm({ ...form, color: e.target.value })}
             />
           </div>
 
@@ -170,9 +156,7 @@ export default function ActividadesPage() {
                     <p className="text-sm font-medium text-gray-900">
                       {a.nombre}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {a.categoria}
-                    </p>
+                    <p className="text-xs text-gray-500">{a.categoria}</p>
                   </div>
                 </div>
 
@@ -189,4 +173,4 @@ export default function ActividadesPage() {
       </div>
     </div>
   );
-}
+  }
