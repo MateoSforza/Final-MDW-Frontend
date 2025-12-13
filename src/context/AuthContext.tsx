@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "react-hot-toast";
-import { loginRequest, registerRequest } from "../api/authApi";
+import { loginRequest, registerRequest, getCurrentUser, logoutRequest } from "../api/authApi";
 import type {LoginPayload, RegisterPayload} from "../api/authApi";
 
 
@@ -25,34 +25,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Al montar, recuperar token/usuario del storage
+  // Al montar, consultar al backend si hay sesión activa (cookie HttpOnly)
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-
-    if (storedUser && storedToken) {
+    (async () => {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
+        const res = await getCurrentUser();
+        const usuario = res.data?.usuario ?? res.data?.user ?? null;
+        if (usuario) setUser(usuario);
+      } catch (err) {
+        // no session
+      } finally {
+        setLoading(false);
       }
-    }
-
-    setLoading(false);
+    })();
   }, []);
 
   const login = async (data: LoginPayload): Promise<boolean> => {
     setLoading(true);
     try {
       const res = await loginRequest(data);
-      const { token, usuario } = res.data;
+      // El backend debería establecer la cookie HttpOnly; el body puede devolver el usuario
+      const usuario = res.data?.usuario ?? res.data?.user ?? null;
+      if (usuario) {
+        setUser(usuario);
+        return true;
+      }
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(usuario));
-      setUser(usuario);
+      // Si no venía el usuario, consultamos el endpoint /me
+      const me = await getCurrentUser();
+      const meUser = me.data?.usuario ?? me.data?.user ?? null;
+      if (meUser) {
+        setUser(meUser);
+        return true;
+      }
 
-      return true;
+      return false;
     } catch (error) {
       console.error("Error en login:", error);
       return false;
@@ -75,16 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      await logoutRequest();
+    } catch {}
     setUser(null);
   };
 
   // Escuchar evento global cuando axios detecta sesión expirada
   useEffect(() => {
     const handler = () => {
-      logout();
+      void logout();
       toast.error("Tu sesión expiró");
     };
     window.addEventListener("session-expired", handler);

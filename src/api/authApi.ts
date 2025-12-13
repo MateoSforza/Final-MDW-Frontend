@@ -18,3 +18,11 @@ export const registerRequest = (data: RegisterPayload) => {
 export const loginRequest = (data: LoginPayload) => {
   return api.post("/auth/login", data);
 };
+
+export const getCurrentUser = () => {
+  return api.get("/auth/me");
+};
+
+export const logoutRequest = () => {
+  return api.post("/auth/logout");
+};

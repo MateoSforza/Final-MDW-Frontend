@@ -3,17 +3,12 @@ import { toast } from "react-hot-toast";
 
 const api = axios.create({
   baseURL: "http://localhost:3000/api",
+  // Enviar cookies (ej. cookie HttpOnly con JWT)
+  withCredentials: true,
 });
 
-// Interceptor para agregar token si existe
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// No añadimos Authorization desde localStorage: el backend maneja la sesión vía cookie HttpOnly.
+api.interceptors.request.use((config) => config);
 
 // Interceptor de response (manejo de errores)
 api.interceptors.response.use(
@@ -25,10 +20,7 @@ api.interceptors.response.use(
       if (status === 401) {
         toast.error("Tu sesión expiró");
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        // Notify other parts of the app
+        // Notify other parts of the app (ej: limpiar user en contexto)
         window.dispatchEvent(new Event("session-expired"));
 
         window.location.href = "/login";
