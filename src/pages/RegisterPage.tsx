@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-hot-toast";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -20,9 +21,11 @@ export default function RegisterPage() {
 
     if (ok) {
       setMsg("Registro exitoso. Ahora podés iniciar sesión.");
+      toast.success("Registro exitoso. Podés iniciar sesión.");
       navigate("/login");
     } else {
       setMsg("Error al registrarse. Probá con otro email.");
+      toast.error("Error al registrarse. Probá con otro email.");
     }
   };
 

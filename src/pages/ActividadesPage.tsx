@@ -8,12 +8,15 @@ import {
   type CrearActividadPayload,
   type Actividad,
 } from "../api/actividadesApi";
+import { toast } from "react-hot-toast";
 
 export default function ActividadesPage() {
   const { user } = useAuth();
 
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [form, setForm] = useState<CrearActividadPayload>({
     nombre: "",
@@ -31,7 +34,7 @@ export default function ActividadesPage() {
       const res = await getActividadesRequest();
       setActividades(res.data);
     } catch (error) {
-      console.error("Error al cargar actividades:", error);
+      toast.error("Error al cargar actividades");
     } finally {
       setLoading(false);
     }
@@ -39,24 +42,31 @@ export default function ActividadesPage() {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+    setCreating(true);
     try {
       const res = await crearActividadRequest(form);
       // Actualizamos localmente sin recargar todo (más pro)
       setActividades((prev) => [res.data, ...prev]);
-
       setForm({ nombre: "", categoria: "", color: "#4f46e5" });
+      toast.success("Actividad creada");
     } catch (error) {
-      console.error("Error creando actividad:", error);
+      toast.error("Error creando actividad");
+    } finally {
+      setCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     try {
       await eliminarActividadRequest(id);
       // Sacamos la actividad del estado (más pro)
       setActividades((prev) => prev.filter((a) => a._id !== id));
+      toast.success("Actividad eliminada");
     } catch (error) {
-      console.error("Error eliminando actividad:", error);
+      toast.error("Error eliminando actividad");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -120,9 +130,10 @@ export default function ActividadesPage() {
           <div className="flex items-end">
             <button
               type="submit"
-              className="w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+              disabled={creating}
+              className={`w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors ${creating ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              Crear
+              {creating ? 'Creando...' : 'Crear'}
             </button>
           </div>
         </form>
@@ -162,9 +173,10 @@ export default function ActividadesPage() {
 
                 <button
                   onClick={() => handleDelete(a._id)}
-                  className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  disabled={deletingId === a._id}
+                  className={`text-xs text-red-600 hover:text-red-700 font-medium ${deletingId === a._id ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  Eliminar
+                  {deletingId === a._id ? 'Eliminando...' : 'Eliminar'}
                 </button>
               </div>
             ))}

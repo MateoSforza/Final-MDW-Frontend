@@ -9,6 +9,7 @@ import {
   type Sesion,
 } from "../api/sesionesApi";
 import { getActividadesRequest, type Actividad } from "../api/actividadesApi";
+import { toast } from "react-hot-toast";
 
 export default function SesionesPage() {
   const { user } = useAuth();
@@ -16,6 +17,8 @@ export default function SesionesPage() {
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [form, setForm] = useState<CrearSesionPayload>({
     actividadId: "",
@@ -43,7 +46,7 @@ export default function SesionesPage() {
         setForm((prev) => ({ ...prev, actividadId: actRes.data[0]._id }));
       }
     } catch (error) {
-      console.error("Error cargando sesiones:", error);
+      toast.error("Error cargando sesiones");
     } finally {
       setLoading(false);
     }
@@ -51,6 +54,7 @@ export default function SesionesPage() {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+    setCreating(true);
     try {
       const res = await crearSesionRequest(form);
       setSesiones((prev) => [res.data, ...prev]);
@@ -61,17 +65,24 @@ export default function SesionesPage() {
         duracionMinutos: 30,
         nota: "",
       }));
+      toast.success("Sesión creada");
     } catch (error) {
-      console.error("Error creando sesión:", error);
+      toast.error("Error creando sesión");
+    } finally {
+      setCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     try {
       await eliminarSesionRequest(id);
       setSesiones((prev) => prev.filter((s) => s._id !== id));
+      toast.success("Sesión eliminada");
     } catch (error) {
-      console.error("Error eliminando sesión:", error);
+      toast.error("Error eliminando sesión");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -170,9 +181,10 @@ export default function SesionesPage() {
           <div className="flex items-end">
             <button
               type="submit"
-              className="w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+              disabled={creating}
+              className={`w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors ${creating ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              Crear
+              {creating ? 'Creando...' : 'Crear'}
             </button>
           </div>
         </form>
@@ -204,9 +216,10 @@ export default function SesionesPage() {
 
                 <button
                   onClick={() => handleDelete(s._id)}
-                  className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  disabled={deletingId === s._id}
+                  className={`text-xs text-red-600 hover:text-red-700 font-medium ${deletingId === s._id ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  Eliminar
+                  {deletingId === s._id ? 'Eliminando...' : 'Eliminar'}
                 </button>
               </li>
             ))}

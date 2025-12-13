@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { toast } from "react-hot-toast";
 import { loginRequest, registerRequest } from "../api/authApi";
 import type {LoginPayload, RegisterPayload} from "../api/authApi";
 
@@ -79,6 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user");
     setUser(null);
   };
+
+  // Escuchar evento global cuando axios detecta sesión expirada
+  useEffect(() => {
+    const handler = () => {
+      logout();
+      toast.error("Tu sesión expiró");
+    };
+    window.addEventListener("session-expired", handler);
+    return () => window.removeEventListener("session-expired", handler);
+  }, []);
 
   const value: AuthContextValue = {
     user,

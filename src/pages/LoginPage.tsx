@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -17,9 +18,11 @@ export default function LoginPage() {
 
     const ok = await login({ email, password });
     if (ok) {
+      toast.success("Bienvenido");
       navigate("/dashboard");
     } else {
       setErrorMsg("Credenciales inválidas o error en el servidor.");
+      toast.error("Credenciales inválidas o error en el servidor.");
     }
   };
 

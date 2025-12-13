@@ -37,6 +37,8 @@ export default function DashboardPage() {
       setActividades(actRes.data);
     } catch (error) {
       console.error("Error cargando datos del dashboard:", error);
+      // Mostrar toast al error
+      try { const { toast } = await import('react-hot-toast'); toast.error('Error cargando datos del dashboard'); } catch { /* ignore */ }
     } finally {
       setLoading(false);
     }
