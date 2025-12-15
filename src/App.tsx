@@ -1,10 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
+
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ActividadesPage from "./pages/ActividadesPage";
 import SesionesPage from "./pages/SesionesPage";
 import DashboardPage from "./pages/DashboardPage";
+
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/Layout";
 
@@ -29,6 +32,20 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  /**
+   * Inicializa el modo claro / oscuro al cargar la app
+   * Lee preferencia desde localStorage
+   */
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const html = document.documentElement;
+
+    if (savedTheme === "dark") {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
+  }, []);
 
   /**
    * Alterna el modo claro / oscuro
@@ -50,10 +67,13 @@ export default function App() {
       {/* Botón flotante de modo claro / oscuro */}
       <button
         onClick={toggleTheme}
-        className="fixed bottom-4 right-4 z-50 px-4 py-2 rounded-full shadow
-                   bg-gray-800 text-white
-                   dark:bg-gray-200 dark:text-black
-                   transition-colors"
+        className="
+          fixed bottom-4 right-4 z-50
+          px-4 py-2 rounded-full shadow
+          bg-gray-800 text-white
+          dark:bg-gray-200 dark:text-black
+          transition-colors
+        "
         aria-label="Toggle theme"
       >
         🌙 / ☀️
@@ -99,7 +119,7 @@ export default function App() {
           }
         />
 
-        {/* fallback por si alguien mete una ruta inventada */}
+        {/* fallback */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </>
