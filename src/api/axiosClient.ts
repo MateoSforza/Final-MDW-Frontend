@@ -1,5 +1,4 @@
 import axios from "axios";
-import { toast } from "react-hot-toast";
 
 const api = axios.create({
   baseURL: "http://localhost:3000/api",
@@ -7,34 +6,28 @@ const api = axios.create({
   withCredentials: true,
 });
 
+export default api;
+
 // No añadimos Authorization desde localStorage: el backend maneja la sesión vía cookie HttpOnly.
 api.interceptors.request.use((config) => config);
 
 // Interceptor de response (manejo de errores)
 api.interceptors.response.use(
-  (response) => response,
+  (r) => r,
   (error) => {
-    if (error.response) {
-      const status = error.response.status;
-      const message = error.response.data?.message;
-      if (status === 401) {
-        toast.error("Tu sesión expiró");
+    const status = error?.response?.status;
+    const url: string = error?.config?.url ?? "";
 
-        // Notify other parts of the app (ej: limpiar user en contexto)
-        window.dispatchEvent(new Event("session-expired"));
+    const isAuthEndpoint =
+      url.includes("/auth/me") ||
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/logout");
 
-        window.location.href = "/login";
-      } else if (status === 500) {
-        toast.error("Error en el servidor. Intentá más tarde.");
-      } else if (message) {
-        toast.error(message);
-      } else {
-        toast.error("Ocurrió un error en la petición.");
-      }
+    if (status === 401 && !isAuthEndpoint) {
+      window.dispatchEvent(new Event("session-expired"));
     }
 
     return Promise.reject(error);
   }
 );
-
-export default api;
