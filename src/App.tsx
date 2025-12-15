@@ -13,8 +13,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-sm text-gray-600">Cargando...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Cargando...
+        </p>
       </div>
     );
   }
@@ -27,49 +29,79 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+
+  /**
+   * Alterna el modo claro / oscuro
+   * - Agrega o quita la clase "dark" en <html>
+   * - Guarda preferencia en localStorage
+   */
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    html.classList.toggle("dark");
+
+    localStorage.setItem(
+      "theme",
+      html.classList.contains("dark") ? "dark" : "light"
+    );
+  };
+
   return (
-    <Routes>
-      {/* Redirigir raíz al login */}
-      <Route path="/" element={<Navigate to="/login" />} />
+    <>
+      {/* Botón flotante de modo claro / oscuro */}
+      <button
+        onClick={toggleTheme}
+        className="fixed bottom-4 right-4 z-50 px-4 py-2 rounded-full shadow
+                   bg-gray-800 text-white
+                   dark:bg-gray-200 dark:text-black
+                   transition-colors"
+        aria-label="Toggle theme"
+      >
+        🌙 / ☀️
+      </button>
 
-      {/* Rutas públicas */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Routes>
+        {/* Redirigir raíz al login */}
+        <Route path="/" element={<Navigate to="/login" />} />
 
-      {/* Rutas protegidas */}
-      <Route
-        path="/dashboard"
-        element={
-          <RequireAuth>
-            <Layout>
-              <DashboardPage />
-            </Layout>
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/actividades"
-        element={
-          <RequireAuth>
-            <Layout>
-              <ActividadesPage />
-            </Layout>
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/sesiones"
-        element={
-          <RequireAuth>
-            <Layout>
-              <SesionesPage />
-            </Layout>
-          </RequireAuth>
-        }
-      />
+        {/* Rutas públicas */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      {/* fallback por si alguien mete una ruta inventada */}
-      <Route path="*" element={<Navigate to="/login" />} />
-    </Routes>
+        {/* Rutas protegidas */}
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <Layout>
+                <DashboardPage />
+              </Layout>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/actividades"
+          element={
+            <RequireAuth>
+              <Layout>
+                <ActividadesPage />
+              </Layout>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/sesiones"
+          element={
+            <RequireAuth>
+              <Layout>
+                <SesionesPage />
+              </Layout>
+            </RequireAuth>
+          }
+        />
+
+        {/* fallback por si alguien mete una ruta inventada */}
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    </>
   );
 }

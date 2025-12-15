@@ -32,18 +32,17 @@ export default function DashboardPage() {
         getSesionesRequest(),
         getActividadesRequest(),
       ]);
-
       setSesiones(sesRes.data);
       setActividades(actRes.data);
-    } catch (error) {
-      console.error("Error cargando datos del dashboard:", error);
-      // Mostrar toast al error
-      try { const { toast } = await import('react-hot-toast'); toast.error('Error cargando datos del dashboard'); } catch { /* ignore */ }
+    } catch {
+      try {
+        const { toast } = await import("react-hot-toast");
+        toast.error("Error cargando datos del dashboard");
+      } catch {}
     } finally {
       setLoading(false);
     }
   };
-
 
   const totalMinutos = useMemo(
     () => sesiones.reduce((acc, s) => acc + s.duracionMinutos, 0),
@@ -52,7 +51,7 @@ export default function DashboardPage() {
 
   const limite7Dias = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 6); // hoy y 6 días hacia atrás = 7 días
+    d.setDate(d.getDate() - 6);
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
@@ -82,11 +81,8 @@ export default function DashboardPage() {
       }
 
       const actual = mapa.get(id);
-      if (actual) {
-        actual.minutos += s.duracionMinutos;
-      } else {
-        mapa.set(id, { nombre, minutos: s.duracionMinutos });
-      }
+      if (actual) actual.minutos += s.duracionMinutos;
+      else mapa.set(id, { nombre, minutos: s.duracionMinutos });
     });
 
     return Array.from(mapa.values()).sort((a, b) => b.minutos - a.minutos);
@@ -111,44 +107,31 @@ export default function DashboardPage() {
     return actividadId.nombre;
   };
 
-  // ----- Datos para gráficos -----
-
-  // Gráfico 1: minutos por actividad (ya lo tenemos en minutosPorActividad)
   const dataBarPorActividad = minutosPorActividad.map((item) => ({
     nombre: item.nombre,
     minutos: item.minutos,
   }));
 
-  // Gráfico 2: minutos por día en los últimos 7 días
   const dataBarPorDia = useMemo(() => {
     const dias: { fecha: string; label: string; minutos: number }[] = [];
-
-    // Crear estructura de 7 días (de más viejo a hoy)
     for (let i = 0; i < 7; i++) {
       const d = new Date();
-      d.setDate(d.getDate() - (6 - i)); // 6,5,4,...,0
+      d.setDate(d.getDate() - (6 - i));
       d.setHours(0, 0, 0, 0);
-
-      const label = d.toLocaleDateString("es-AR", {
-        weekday: "short",
-        day: "2-digit",
-      });
-
       dias.push({
-        fecha: d.toISOString().substring(0, 10), // yyyy-mm-dd
-        label,
+        fecha: d.toISOString().substring(0, 10),
+        label: d.toLocaleDateString("es-AR", {
+          weekday: "short",
+          day: "2-digit",
+        }),
         minutos: 0,
       });
     }
 
-    // Sumar minutos por día
     sesiones.forEach((s) => {
-      const fechaSesion = new Date(s.fecha);
-      const iso = fechaSesion.toISOString().substring(0, 10);
+      const iso = new Date(s.fecha).toISOString().substring(0, 10);
       const dia = dias.find((d) => d.fecha === iso);
-      if (dia) {
-        dia.minutos += s.duracionMinutos;
-      }
+      if (dia) dia.minutos += s.duracionMinutos;
     });
 
     return dias;
@@ -157,10 +140,12 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-gray-900">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           Dashboard
         </h1>
-        <p className="text-sm text-gray-500">Cargando datos...</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Cargando datos...
+        </p>
       </div>
     );
   }
@@ -168,54 +153,42 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           Dashboard de {user?.nombre}
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Resumen del tiempo dedicado a tus actividades.
         </p>
       </div>
 
-      {/* Cards resumen */}
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="text-sm font-medium text-gray-600">
-            Total de minutos
-          </h3>
-          <p className="mt-2 text-2xl font-semibold text-gray-900">
-            {totalMinutos}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="text-sm font-medium text-gray-600">
-            Últimos 7 días
-          </h3>
-          <p className="mt-2 text-2xl font-semibold text-gray-900">
-            {minutosUltimos7Dias}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="text-sm font-medium text-gray-600">
-            Cantidad de sesiones
-          </h3>
-          <p className="mt-2 text-2xl font-semibold text-gray-900">
-            {sesiones.length}
-          </p>
-        </div>
+        {[
+          ["Total de minutos", totalMinutos],
+          ["Últimos 7 días", minutosUltimos7Dias],
+          ["Cantidad de sesiones", sesiones.length],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4"
+          >
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              {label}
+            </h3>
+            <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              {value}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {/* Gráficos */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Gráfico: minutos por actividad */}
-        <section className="bg-white rounded-2xl shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">
             Minutos por actividad
           </h2>
 
           {dataBarPorActividad.length === 0 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Todavía no tenés sesiones registradas.
             </p>
           ) : (
@@ -240,9 +213,8 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* Gráfico: minutos por día (últimos 7 días) */}
-        <section className="bg-white rounded-2xl shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3">
+        <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">
             Minutos por día (últimos 7 días)
           </h2>
 
@@ -250,10 +222,7 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dataBarPorDia}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 12 }}
-                />
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="minutos" radius={[6, 6, 0, 0]} />
@@ -263,13 +232,13 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {/* Sesiones recientes */}
-      <section className="bg-white rounded-2xl shadow-sm p-4">
-        <h2 className="text-sm font-semibold text-gray-800 mb-3">
+      <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4">
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">
           Sesiones recientes
         </h2>
+
         {sesionesRecientes.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             No hay sesiones recientes.
           </p>
         ) : (
@@ -277,13 +246,12 @@ export default function DashboardPage() {
             {sesionesRecientes.map((s) => (
               <li
                 key={s._id}
-                className="flex flex-col border-b last:border-b-0 pb-2 last:pb-0"
+                className="flex flex-col border-b border-gray-200 dark:border-slate-700 last:border-b-0 pb-2 last:pb-0"
               >
-                <span className="font-medium text-gray-900">
-                  {getActividadLabel(s.actividadId)} —{" "}
-                  {s.duracionMinutos} min
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {getActividadLabel(s.actividadId)} — {s.duracionMinutos} min
                 </span>
-                <span className="text-gray-500">
+                <span className="text-gray-500 dark:text-gray-400">
                   {new Date(s.fecha).toLocaleString()}
                   {s.nota ? ` — ${s.nota}` : ""}
                 </span>

@@ -41,7 +41,6 @@ export default function SesionesPage() {
       setSesiones(sesRes.data);
       setActividades(actRes.data);
 
-      // Setea actividadId por defecto si está vacío
       if (!form.actividadId && actRes.data.length > 0) {
         setForm((prev) => ({ ...prev, actividadId: actRes.data[0]._id }));
       }
@@ -58,7 +57,6 @@ export default function SesionesPage() {
     try {
       const res = await crearSesionRequest(form);
       setSesiones((prev) => [res.data, ...prev]);
-
       setForm((prev) => ({
         ...prev,
         fecha: new Date().toISOString(),
@@ -66,7 +64,7 @@ export default function SesionesPage() {
         nota: "",
       }));
       toast.success("Sesión creada");
-    } catch (error) {
+    } catch {
       toast.error("Error creando sesión");
     } finally {
       setCreating(false);
@@ -79,7 +77,7 @@ export default function SesionesPage() {
       await eliminarSesionRequest(id);
       setSesiones((prev) => prev.filter((s) => s._id !== id));
       toast.success("Sesión eliminada");
-    } catch (error) {
+    } catch {
       toast.error("Error eliminando sesión");
     } finally {
       setDeletingId(null);
@@ -104,28 +102,36 @@ export default function SesionesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           Sesiones de {user?.nombre}
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Registrá sesiones asociadas a tus actividades.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Nueva sesión</h2>
+      {/* Nueva sesión */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Nueva sesión
+        </h2>
 
         <form
           onSubmit={handleCreate}
           className="grid gap-4 md:grid-cols-[2fr,1fr,1fr,2fr,auto]"
         >
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Actividad</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Actividad
+            </label>
             <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
               value={form.actividadId}
-              onChange={(e) => setForm({ ...form, actividadId: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, actividadId: e.target.value })
+              }
               required
             >
               {actividades.length === 0 ? (
@@ -141,37 +147,49 @@ export default function SesionesPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Fecha</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Fecha
+            </label>
             <input
               type="datetime-local"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
               value={form.fecha.slice(0, 16)}
               onChange={(e) =>
-                setForm({ ...form, fecha: new Date(e.target.value).toISOString() })
+                setForm({
+                  ...form,
+                  fecha: new Date(e.target.value).toISOString(),
+                })
               }
               required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Minutos</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Minutos
+            </label>
             <input
               type="number"
               min={1}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
               value={form.duracionMinutos}
               onChange={(e) =>
-                setForm({ ...form, duracionMinutos: Number(e.target.value) })
+                setForm({
+                  ...form,
+                  duracionMinutos: Number(e.target.value),
+                })
               }
               required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">Nota</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Nota
+            </label>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm"
               value={form.nota ?? ""}
               onChange={(e) => setForm({ ...form, nota: e.target.value })}
               placeholder="Opcional"
@@ -182,33 +200,43 @@ export default function SesionesPage() {
             <button
               type="submit"
               disabled={creating}
-              className={`w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors ${creating ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2 text-sm font-medium transition-colors ${
+                creating ? "opacity-60 cursor-not-allowed" : ""
+              }`}
             >
-              {creating ? 'Creando...' : 'Crear'}
+              {creating ? "Creando..." : "Crear"}
             </button>
           </div>
         </form>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Sesiones registradas</h2>
+      {/* Lista */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Sesiones registradas
+        </h2>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Cargando sesiones...</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Cargando sesiones...
+          </p>
         ) : sesionesOrdenadas.length === 0 ? (
-          <p className="text-sm text-gray-500">Todavía no registraste sesiones.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Todavía no registraste sesiones.
+          </p>
         ) : (
           <ul className="space-y-3">
             {sesionesOrdenadas.map((s) => (
               <li
                 key={s._id}
-                className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3"
+                className="flex items-center justify-between border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {getActividadNombre(s.actividadId)} — {s.duracionMinutos} min
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {getActividadNombre(s.actividadId)} —{" "}
+                    {s.duracionMinutos} min
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(s.fecha).toLocaleString()}
                     {s.nota ? ` — ${s.nota}` : ""}
                   </p>
@@ -217,9 +245,11 @@ export default function SesionesPage() {
                 <button
                   onClick={() => handleDelete(s._id)}
                   disabled={deletingId === s._id}
-                  className={`text-xs text-red-600 hover:text-red-700 font-medium ${deletingId === s._id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  className={`text-xs font-medium text-red-600 hover:text-red-700 ${
+                    deletingId === s._id ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                 >
-                  {deletingId === s._id ? 'Eliminando...' : 'Eliminar'}
+                  {deletingId === s._id ? "Eliminando..." : "Eliminar"}
                 </button>
               </li>
             ))}
