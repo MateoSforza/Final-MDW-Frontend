@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "https://final-mdw-backend.onrender.com/",
   // Enviar cookies (ej. cookie HttpOnly con JWT)
   withCredentials: true,
 });
